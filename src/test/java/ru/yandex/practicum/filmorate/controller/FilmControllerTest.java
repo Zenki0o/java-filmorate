@@ -9,9 +9,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.FilmService;
-import ru.yandex.practicum.filmorate.storage.film.InMemoryFilmStorage;
-import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.validator.FilmValidator;
 
 import java.time.LocalDate;
@@ -27,9 +24,7 @@ class FilmControllerTest {
 
     @BeforeEach
     void setUp() {
-        FilmService filmService = new FilmService(
-                new InMemoryFilmStorage(), new InMemoryUserStorage(), new FilmValidator());
-        FilmController filmController = new FilmController(filmService);
+        FilmController filmController = new FilmController(new FilmValidator());
         mockMvc = MockMvcBuilders.standaloneSetup(filmController).build();
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());

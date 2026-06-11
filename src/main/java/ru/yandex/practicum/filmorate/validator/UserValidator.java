@@ -37,7 +37,6 @@ public class UserValidator {
     public void applyDisplayNameFallback(User user) {
         if (user.getName() == null || user.getName().isBlank()) {
             user.setName(user.getLogin());
-            log.debug("Для пользователя с login={} в качестве имени использован login", user.getLogin());
         }
     }
 }
