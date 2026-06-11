@@ -8,7 +8,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import ru.yandex.practicum.filmorate.exception.ErrorHandler;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
+import ru.yandex.practicum.filmorate.storage.user.InMemoryUserStorage;
 import ru.yandex.practicum.filmorate.validator.UserValidator;
 
 import java.time.LocalDate;
@@ -25,8 +28,11 @@ class UserControllerTest {
 
     @BeforeEach
     void setUp() {
-        UserController userController = new UserController(new UserValidator());
-        mockMvc = MockMvcBuilders.standaloneSetup(userController).build();
+        UserService userService = new UserService(new InMemoryUserStorage(), new UserValidator());
+        UserController userController = new UserController(userService);
+        mockMvc = MockMvcBuilders.standaloneSetup(userController)
+                .setControllerAdvice(new ErrorHandler())
+                .build();
         objectMapper = new ObjectMapper();
         objectMapper.registerModule(new JavaTimeModule());
         objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
