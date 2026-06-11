@@ -1,64 +1,60 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.service.FilmService;
+import ru.yandex.practicum.filmorate.validator.FilmValidator;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @RestController
 @RequestMapping("/films")
 public class FilmController {
 
-    private final FilmService filmService;
+    private final Map<Integer, Film> films = new ConcurrentHashMap<>();
+    private final AtomicInteger idGenerator = new AtomicInteger(1);
+    private final FilmValidator filmValidator;
 
-    @Autowired
-    public FilmController(FilmService filmService) {
-        this.filmService = filmService;
+    public FilmController(FilmValidator filmValidator) {
+        this.filmValidator = filmValidator;
     }
 
     @PostMapping
     public Film create(@RequestBody Film film) {
-        return filmService.create(film);
+        filmValidator.validate(film);
+        int id = idGenerator.getAndIncrement();
+        film.setId(id);
+        films.put(id, film);
+        log.info("Добавлен фильм с id={}", id);
+        return film;
     }
 
     @PutMapping
     public Film update(@RequestBody Film film) {
-        return filmService.update(film);
+        filmValidator.validate(film);
+        if (film.getId() == null || !films.containsKey(film.getId())) {
+            log.warn("Ошибка обновления фильма: фильм с id={} не найден", film.getId());
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Фильм с указанным идентификатором не найден.");
+        }
+        films.put(film.getId(), film);
+        log.info("Обновлён фильм с id={}", film.getId());
+        return film;
     }
 
     @GetMapping
     public List<Film> findAll() {
-        return filmService.findAll();
-    }
-
-    @GetMapping("/{id}")
-    public Film getById(@PathVariable Integer id) {
-        return filmService.getById(id);
-    }
-
-    @PutMapping("/{id}/like/{userId}")
-    public void addLike(@PathVariable Integer id, @PathVariable Integer userId) {
-        filmService.addLike(id, userId);
-    }
-
-    @DeleteMapping("/{id}/like/{userId}")
-    public void removeLike(@PathVariable Integer id, @PathVariable Integer userId) {
-        filmService.removeLike(id, userId);
-    }
-
-    @GetMapping("/popular")
-    public List<Film> getPopularFilms() {
-        return filmService.getPopularFilms();
+        return new ArrayList<>(films.values());
     }
 }
